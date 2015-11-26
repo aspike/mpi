@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <conio.h>
+#include <curses.h>
 #include <time.h>
 #include <math.h>
 #include <mpi.h>
@@ -346,7 +346,7 @@ void TestResult(double* pMatrix, double* pVector, double* pResult, int Size) {
 	}
 
     for (int i=0; i<Size; i++) {
-	  if (fabs(pRightPartVector[i]-pVector[i]) > Accuracy))
+	  if (fabs(pRightPartVector[i]-pVector[i]) > Accuracy)
         equal = 1;
     }
     if (equal == 1) 
@@ -359,7 +359,7 @@ void TestResult(double* pMatrix, double* pVector, double* pResult, int Size) {
 
 
 
-void main(int argc, char* argv[]) {
+int main(int argc, char* argv[]) {
   double* pMatrix;        // Matrix of the linear system
   double* pVector;        // Right parts of the linear system
   double* pResult;        // Result vector
