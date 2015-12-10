@@ -1,0 +1,13 @@
+
+ Matrix A (generated randomly):
+-0.680375 
+
+ Vector b (generated randomly):
+ 0.211234 
+
+
+The solution is:
+x0=-0.310467	
+
+LU decomposition time: 0.420000
+Back substitution time: 0.000000
