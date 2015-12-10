@@ -1,189 +1,103 @@
-/* quicksort */
-#include <stdio.h>
+#include <iostream>
+#include <sys/time.h>
 #include <mpi.h>
-#include <time.h>
+#include <cstdlib>
+using namespace std;
 
-#define N 1000000
-
-void showElapsed(int id, char *m);
-void showVector(int *v, int n, int id);
-int * merge(int *v1, int n1, int *v2, int n2);
-void swap(int *v, int i, int j);
-void qsort(int *v, int left, int right);
-
-double startTime, stopTime;
-
-void showElapsed(int id, char *m)
-{
-	printf("%d: %s %f secs\n",id,m,(clock()-startTime)/CLOCKS_PER_SEC);
+void swap(int *data, int i, int j) {
+  int temp = data[i];
+  data[i] = data[j];
+  data[j] = temp;
 }
 
-void showVector(int *v, int n, int id)
-{
-	int i;
-	printf("%d: ",id);
-	for(i=0;i<n;i++)
-		printf("%d ",v[i]);
-	putchar('\n');
+int partition(int *data, int start, int end) {
+  if (start >= end) return 0;
+
+  int pivotValue = data[start];
+  int low = start;
+  int high = end - 1;
+  while (low < high) {
+    while (data[low] <= pivotValue && low < end) low++;
+    while (data[high] > pivotValue && high > start) high--;
+    if (low < high) swap(data, low, high);
+  }
+  swap(data, start, high);
+
+  return high;
 }
 
-int * merge(int *v1, int n1, int *v2, int n2)
-{
-	int i,j,k;
-	int * result;
+void quicksort(int *data, int start, int end) {
+  if  (end-start+1 < 2) return;
 
-	result = (int *)malloc((n1+n2)*sizeof(int));
+  int pivot = partition(data, start, end);
 
-	i=0; j=0; k=0;
-	while(i<n1 && j<n2)
-		if(v1[i]<v2[j])
-		{
-			result[k] = v1[i];
-			i++; k++;
-		}
-		else
-		{
-			result[k] = v2[j];
-			j++; k++;
-		}
-	if(i==n1)
-		while(j<n2)
-		{
-			result[k] = v2[j];
-			j++; k++;
-		}
-	else
-		while(i<n1)
-		{
-			result[k] = v1[i];
-			i++; k++;
-		}
-	return result;
+  quicksort(data, start, pivot);
+  quicksort(data, pivot+1, end);
 }
 
-void swap(int *v, int i, int j)
-{
-	int t;
-	t = v[i];
-	v[i] = v[j];
-	v[j] = t;
-}
+int main(int argc, char *argv[]) {
+  MPI_Init(&argc, &argv);
+  int rank, size;
 
-void qsort(int *v, int left, int right)
-{
-	int i,last;
-	if(left>=right)
-		return;
-	swap(v,left,(left+right)/2);
-	last = left;
-	for(i=left+1;i<=right;i++)
-		if(v[i]<v[left])
-			swap(v,++last,i);
-	swap(v,left,last);
-	qsort(v,left,last-1);
-	qsort(v,last+1,right);
-}
+  MPI_Comm_rank (MPI_COMM_WORLD, &rank);
+  MPI_Comm_size (MPI_COMM_WORLD, &size);
 
-int main(int argc, char **argv)
-{
-	int * data;
-	int * chunk;
-	int * other;
-	int m,n=N;
-	int id,p;
-	int s;
-	int i;
-	int step;
-	MPI_Status status;
+  if (argc < 2) {
+    if (rank == 0)
+      cout << "Usage: mpiqsort num_of_numbers" << endl;
+    exit(0);
+  }
 
-	startTime = clock();
+  int length = atoi(argv[1]);
 
-	MPI_Init(&argc,&argv);
-	MPI_Comm_rank(MPI_COMM_WORLD,&id);
-	MPI_Comm_size(MPI_COMM_WORLD,&p);
+  // Create random data
+  srand(time(0));
+  int *data = new int[length];	// Big enough to hold it all
+  int i;
+  for (i=0; i<length/size; i++)
+    data[i] = rand();
+  
+  MPI_Status status;
+  // Send all of the data to processor 0
+  if (rank == 0) {
+    for (i=1; i<size; i++)
+      MPI_Recv(data+i*length/size, length/size, MPI_INT, i, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+  }
+  else {
+    MPI_Send(data, length/size, MPI_INT, 0, 0, MPI_COMM_WORLD);
+  }
 
-	showElapsed(id,"MPI setup complete");
+  // Time everything after exchange of data until sorting is complete
+  timeval start, end;
+  gettimeofday(&start, 0);
+ 
+  // Do recursive quicksort starting at processor 0 and spreading out recursive calls to other machines
+  int s;
+  int localDataSize =  length;
+  int pivot;
+  for (s=size; s > 1; s /= 2) {
+    if (rank % s == 0) {
+      pivot = partition(data, 0, localDataSize);
 
-	if(id==0)
-	{
-		int r;
-		srandom(clock());
-		
-		s = n/p;
-		r = n%p;
-		data = (int *)malloc((n+s-r)*sizeof(int));
-		for(i=0;i<n;i++)
-			data[i] = random();
-		if(r!=0)
-		{
-			for(i=n;i<n+s-r;i++)
-				data[i]=0;
-			s=s+1;
-		}
-		showElapsed(id,"generated the random numbers");
+      // Send everything after the pivot to processor rank + s/2 and keep up to the pivot
+      MPI_Send(data+pivot, localDataSize - pivot, MPI_INT, rank + s/2, 0, MPI_COMM_WORLD);
+      localDataSize = pivot;
+    }
+    else if (rank % s == s/2) {
+      // Get data from processor rank - s/2
+      MPI_Recv(data, length, MPI_INT, rank - s/2, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+      // How much data did we really get?
+      MPI_Get_count(&status, MPI_INT, &localDataSize);
+    }
+  }
+  // Perform local sort
+  quicksort(data, 0, localDataSize);
 
-		MPI_Bcast(&s,1,MPI_INT,0,MPI_COMM_WORLD);
-		chunk = (int *)malloc(s*sizeof(int));
-		MPI_Scatter(data,s,MPI_INT,chunk,s,MPI_INT,0,MPI_COMM_WORLD);
+  // Measure elapsed time
+  gettimeofday(&end, 0);
+  if (rank == 0)
+    cout << "Elapsed time for sorting = " << (end.tv_sec - start.tv_sec + .000001*(end.tv_usec - start
+ .tv_usec)) << " seconds" << endl;
 
-		showElapsed(id,"scattered data");
-
-		qsort(chunk,0,s-1);
-
-		showElapsed(id,"sorted");
-	}
-	else
-	{
-		MPI_Bcast(&s,1,MPI_INT,0,MPI_COMM_WORLD);
-		chunk = (int *)malloc(s*sizeof(int));
-		MPI_Scatter(data,s,MPI_INT,chunk,s,MPI_INT,0,MPI_COMM_WORLD);
-
-		showElapsed(id,"got data");
-
-		qsort(chunk,0,s-1);
-
-		showElapsed(id,"sorted");
-	}
-
-	step = 1;
-	while(step<p)
-	{
-		if(id%(2*step)==0)
-		{
-			if(id+step<p)
-			{
-				MPI_Recv(&m,1,MPI_INT,id+step,0,MPI_COMM_WORLD,&status);
-				other = (int *)malloc(m*sizeof(int));
-				MPI_Recv(other,m,MPI_INT,id+step,0,MPI_COMM_WORLD,&status);
-				showElapsed(id,"got merge data");
-				chunk = merge(chunk,s,other,m);
-				showElapsed(id,"merged data");
-				s = s+m;
-			} 
-		}
-		else
-		{
-			int near = id-step;
-			MPI_Send(&s,1,MPI_INT,near,0,MPI_COMM_WORLD);
-			MPI_Send(chunk,s,MPI_INT,near,0,MPI_COMM_WORLD);
-			showElapsed(id,"sent merge data");
-			break;
-		}
-		step = step*2;
-	}
-	if(id==0)
-	{
-		FILE * fout;
-
-		stopTime = clock();
-		printf("%d; %d processors; %f secs\n", s,p,(stopTime-startTime)/CLOCKS_PER_SEC);
-
-		showElapsed(id,"opening out file");
-		fout = fopen("result","w");
-		for(i=0;i<s;i++)
-			fprintf(fout,"%d\n",chunk[i]);
-		fclose(fout);
-		showElapsed(id,"closed out file");
-	}
-	MPI_Finalize();
+  MPI_Finalize();
 }
