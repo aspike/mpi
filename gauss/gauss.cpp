@@ -35,17 +35,17 @@ int main(int argc, char **argv)
                 A[i][j]=range*(1.0-2.0*(double)rand()/RAND_MAX);
             b[i]=range*(1.0-2.0*(double)rand()/RAND_MAX);
         }
-        printf("\n Matrix A (generated randomly):\n");
-        for (i=0; i<n; i++)
-        {
-            for (j=0; j<n; j++)
-                printf("%9.6lf ",A[i][j]);
-            printf("\n");
-        }
-        printf("\n Vector b (generated randomly):\n");
-        for (i=0; i<n; i++)
-            printf("%9.6lf ",b[i]);
-        printf("\n\n");
+        // printf("\n Matrix A (generated randomly):\n");
+        // for (i=0; i<n; i++)
+        // {
+        //     for (j=0; j<n; j++)
+        //         printf("%9.6lf ",A[i][j]);
+        //     printf("\n");
+        // }
+        // printf("\n Vector b (generated randomly):\n");
+        // for (i=0; i<n; i++)
+        //     printf("%9.6lf ",b[i]);
+        // printf("\n\n");
     }
 
     //////////////////////////////////////////////////////////////////////////////////
