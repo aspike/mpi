@@ -14,10 +14,10 @@ int main(int argc, char **argv)
     MPI_Init(&argc, &argv);
 
     int i,j,k;
-    int map[500];
-    double A[500][500],b[500],c[500],x[500],sum=0.0;
-    double range=1.0;
     int n = atoi(argv[1]);
+    int map[n];
+    double A[n][n],b[n],c[n],x[n],sum=0.0;
+    double range=1.0;
     int rank, nprocs;
     clock_t begin1, end1, begin2, end2;
     MPI_Status status;
@@ -52,7 +52,7 @@ int main(int argc, char **argv)
 
     begin1 =clock();
 
-    MPI_Bcast (&A[0][0],500*500,MPI_DOUBLE,0,MPI_COMM_WORLD);
+    MPI_Bcast (&A[0][0],n*n,MPI_DOUBLE,0,MPI_COMM_WORLD);
     MPI_Bcast (b,n,MPI_DOUBLE,0,MPI_COMM_WORLD);    
 
     for(i=0; i<n; i++)
