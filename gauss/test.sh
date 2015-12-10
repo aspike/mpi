@@ -11,5 +11,5 @@ fi
 
 for i in {1..8}
 do
-	for j in {1..8}; do mpirun -n $i gauss $j >> test/test$i-$j.txt; done
+	for ((j=1; j <= 100; j=j*10)); do mpirun -n $i gauss $j >> test/test$i-$j.txt; done
 done
