@@ -108,12 +108,12 @@ int main(int argc, char **argv)
     //////////////////////////////////////////////////////////////////////////////////
     if (rank==0)
     { 
-        printf("\nThe solution is:");
-        for(i=0;i<n;i++)
-        {
-            printf("\nx%d=%f\t",i,x[i]);
+        // printf("\nThe solution is:");
+        // for(i=0;i<n;i++)
+        // {
+        //     printf("\nx%d=%f\t",i,x[i]);
 
-        }
+        // }
 
         printf("\n\nLU decomposition time: %f", (double)(end1 - begin1) / CLOCKS_PER_SEC);
         printf("\nBack substitution time: %f\n", (double)(end2 - begin2) / CLOCKS_PER_SEC);
