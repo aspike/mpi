@@ -1,6 +1,7 @@
 #include <iostream>
 #include <sys/time.h>
 #include <mpi.h>
+#include <cstdlib>
 using namespace std;
 
 void swap(int *data, int i, int j) {
