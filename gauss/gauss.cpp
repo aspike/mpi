@@ -7,7 +7,7 @@ int main(int argc, char **argv)
 {
     if (argc <= 1)
     {
-        std::cout << "Usage: " << argv[0] << " matrix_size" << '\n';
+        printf("Usage %s matrix_size \n", argv[0]);
         exit(0);
     }
 
