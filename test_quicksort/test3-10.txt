@@ -1,1 +1,0 @@
-Elapsed time for sorting = 3.7e-05 seconds

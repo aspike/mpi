@@ -1,1 +1,1 @@
-Ctrl-C caught... cleaning up processes
+Elapsed time for sorting = 3.1e-05 seconds
